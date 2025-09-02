@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Collaboration</title>
+</head>
+<body>
+    <h1>Debug Collaboration</h1>
+    <div id="debug-output"></div>
+    
+    <script type="module">
+        import * as Y from 'https://cdn.skypack.dev/yjs';
+        import { WebsocketProvider } from 'https://cdn.skypack.dev/y-websocket';
+        
+        const output = document.getElementById('debug-output');
+        
+        function log(message) {
+            console.log(message);
+            output.innerHTML += `<p>${message}</p>`;
+        }
+        
+        // Test Y.js connection
+        log('Starting Y.js debug test...');
+        
+        const ydoc = new Y.Doc();
+        const ytext = ydoc.getText('monaco');
+        
+        log('Y.js document created');
+        
+        const provider = new WebsocketProvider('ws://localhost:3001/yjs', 'debug-room', ydoc);
+        
+        log('WebSocket provider created');
+        
+        provider.on('status', (event) => {
+            log(`Provider status: ${event.status}`);
+        });
+        
+        provider.awareness.setLocalStateField('user', {
+            name: 'Debug User',
+            color: '#FF0000'
+        });
+        
+        log('User set in awareness');
+        
+        provider.awareness.on('change', () => {
+            const states = Array.from(provider.awareness.getStates().entries());
+            log(`Awareness change - ${states.length} users`);
+            states.forEach(([clientId, state]) => {
+                log(`  Client ${clientId}: ${JSON.stringify(state.user)}`);
+            });
+        });
+        
+        setTimeout(() => {
+            const content = ytext.toString();
+            log(`Y.js document content after 2s: "${content}" (length: ${content.length})`);
+            
+            if (!content) {
+                log('Document is empty, inserting test content...');
+                ytext.insert(0, 'Test content from debug');
+            }
+        }, 2000);
+        
+    </script>
+</body>
+</html>
